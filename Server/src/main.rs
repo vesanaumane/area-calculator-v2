@@ -5,8 +5,21 @@ use crate::geometry::point::Point;
 use crate::geometry::angular_shape::AngularShape;
 use crate::geometry::traits::AreaCalculatable;
 
+use tracing::{info, error, debug};
+use tracing_subscriber::{
+    prelude::*,
+    fmt,
+    layer::Layer,
+    Registry, 
+    filter
+};
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+    // Setup logging.
+    setup_tracing();
+
     let line1: Line = Line {
         start: Point { x: 1.0, y: 1.0 },
         end: Point { x: 5.0, y: 1.0 },
@@ -17,13 +30,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         end: Point { x: 5.0, y: 5.0 },
     };
 
-    println!("The length of the line1 is: {}", line1.length() );
-    println!("The length of the line2 is: {}", line2.length() );
+    info!("The length of the line1 is: {}", line1.length() );
+    info!("The length of the line2 is: {}", line2.length() );
 
     if line1.intersects( &line2 ) {
-        println!("The lines intersect.");
+        info!("The lines intersect.");
     } else {
-        println!("The lines do not intersect.");
+        info!("The lines do not intersect.");
     }
 
     // Create a square. The first point is also the last point.
@@ -37,13 +50,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Check if the square is valid.
     if square.is_valid()? {
-        println!("The square is valid.");
+        info!("The square is valid.");
     } else {
-        println!("The square is not valid.");
+        info!("The square is not valid.");
     }
 
     // Calculate the area of the square.
-    println!("The area of the square is: {}", square.area() );
+    info!("The area of the square is: {}", square.area() );
 
     Ok(())
+}
+
+fn setup_tracing() {
+
+    // Log file access.
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("log.txt")
+        .unwrap();
+
+    // Subscribe to the tracing events.
+    let subcriber = Registry::default()
+        .with(
+            // Info messages and higher are written to the console.
+            fmt::Layer::new()
+                .compact()
+                .with_ansi(true)
+                .with_filter(filter::LevelFilter::INFO)
+        )
+        .with(
+            // Debug messages and higher are written to the log file.
+            fmt::Layer::new()
+                .with_writer(log_file)
+                .with_ansi(false)
+                .with_filter(filter::LevelFilter::DEBUG)
+        );
+    
+    // Apply the subscriber.
+    tracing::subscriber::set_global_default(subcriber).unwrap();
 }

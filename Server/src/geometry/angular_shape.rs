@@ -2,6 +2,7 @@ use crate::geometry::point::Point;
 use crate::geometry::line::Line;
 use crate::geometry::traits::AreaCalculatable;
 use std::error::Error;
+use tracing::{info, error, debug};
 
 use super::line::LineError;
 
@@ -38,7 +39,7 @@ impl AngularShape {
 
         // A shape with less than 3 corner points is not a valid shape.
         if self.corners.len() < 3 {
-            print!(" Shape is not valid, less than 3 corner points!");
+            debug!(" Shape is not valid, less than 3 corner points!");
             return Ok(false);
         }
 
@@ -46,7 +47,7 @@ impl AngularShape {
         for i in 0..self.corners.len() {
             for j in 0..self.corners.len() {
                 if i != j && self.corners[i] == self.corners[j] {
-                    println!(" Shape is not valid, corner points {i} and {j} are the same {}!", self.corners[i]);
+                    debug!(" Shape is not valid, corner points {i} and {j} are the same {}!", self.corners[i]);
                     return Ok(false);
                 }
             }
@@ -63,7 +64,7 @@ impl AngularShape {
 
             // Shape is not valid if the lines do not connect.
             if lines[i].end != lines[i + 1].start {
-                println!(" Shape is not valid, lines do not connect! End point of a line {} ({}) is not the same as the start point of the next line ({}) in the shape!", 
+                debug!(" Shape is not valid, lines do not connect! End point of a line {} ({}) is not the same as the start point of the next line ({}) in the shape!", 
                     i, lines[i].end, lines[i + 1].start);
                 return Ok(false);
             }
@@ -90,7 +91,7 @@ impl AngularShape {
 
                     // Check if the lines intersect.
                     if adjusted_line.intersects( &lines[j] ) {
-                        println!(" Shape is not valid, lines intersect! Line {i} intersects with line {j} in the shape!");
+                        debug!(" Shape is not valid, lines intersect! Line {i} intersects with line {j} in the shape!");
                         return Ok(false);
                     }
                 }
