@@ -1,7 +1,5 @@
 name: Server
 
-run-name: "Build and test the server component" 
-
 on:
   push:
     branches: [ "main" ]
