@@ -38,7 +38,18 @@ impl AngularShape {
 
         // A shape with less than 3 corner points is not a valid shape.
         if self.corners.len() < 3 {
+            print!(" Shape is not valid, less than 3 corner points!");
             return Ok(false);
+        }
+
+        // A shape is not valid if the points are the same.
+        for i in 0..self.corners.len() {
+            for j in 0..self.corners.len() {
+                if i != j && self.corners[i] == self.corners[j] {
+                    println!(" Shape is not valid, corner points {i} and {j} are the same {}!", self.corners[i]);
+                    return Ok(false);
+                }
+            }
         }
 
         // Check that the starting and ending points of the subsequent lines are the same.
@@ -248,7 +259,10 @@ mod tests {
             corners: vec![
                 Point { x: 0.0, y: 0.0 },
                 Point { x: 0.0, y: 2.0 },
-                Point { x: 0.0, y: 2.0 }
+                Point { x: 2.0, y: 2.0 },
+                Point { x: 2.0, y: 1.0 },
+                Point { x: 0.0, y: 2.0 },
+                Point { x: 0.5, y: 0.5 },
             ]
         };
         assert!( square.is_valid()? == false );
