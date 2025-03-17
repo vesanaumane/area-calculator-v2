@@ -5,7 +5,7 @@ use crate::geometry::point::Point;
 use crate::geometry::angular_shape::AngularShape;
 use crate::geometry::traits::AreaCalculatable;
 
-use tracing::{info, error, debug};
+use tracing::{info};
 use tracing_subscriber::{
     prelude::*,
     fmt,
@@ -19,6 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Setup logging.
     setup_tracing();
+    info!("Server started.");
 
     let line1: Line = Line {
         start: Point { x: 1.0, y: 1.0 },
@@ -57,6 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Calculate the area of the square.
     info!("The area of the square is: {}", square.area() );
+
+    info!("Server stopped.");
 
     Ok(())
 }

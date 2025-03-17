@@ -2,7 +2,7 @@ use crate::geometry::point::Point;
 use crate::geometry::line::Line;
 use crate::geometry::traits::AreaCalculatable;
 use std::error::Error;
-use tracing::{info, error, debug};
+use tracing::{debug};
 
 use super::line::LineError;
 
