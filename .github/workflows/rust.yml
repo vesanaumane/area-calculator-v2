@@ -9,7 +9,15 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Server is on subfolder "Server"
+defaults:
+  run:
+    working-directory: ./Server
+
 jobs:
+
+  # Build job will build the project as well as
+  # run unit tests.
   build:
 
     runs-on: ubuntu-latest
@@ -17,8 +25,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      working-directory: ./Server
       run: cargo build --verbose
     - name: Run tests
-      working-directory: ./Server
       run: cargo test --verbose
