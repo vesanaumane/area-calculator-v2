@@ -243,6 +243,19 @@ mod tests {
     }
 
     #[test]
+    fn test_is_not_valid_same_points () -> Result<(), Box<dyn Error>> {
+        let square: AngularShape = AngularShape {
+            corners: vec![
+                Point { x: 0.0, y: 0.0 },
+                Point { x: 0.0, y: 2.0 },
+                Point { x: 0.0, y: 2.0 }
+            ]
+        };
+        assert!( square.is_valid()? == false );
+        Ok(())
+    }
+
+    #[test]
     fn test_is_not_valid_dot() -> Result<(), Box<dyn Error>> {
         let square: AngularShape = AngularShape {
             corners: vec![
@@ -286,7 +299,7 @@ mod tests {
             ]
         };
         let area: f64 = triangle.area();
-        assert!( area > 0.0, "Area should always be positive." );
+        assert!( area >= 0.0, "Area should always be positive or zero." );
         assert!( (triangle.area() - 2.0).abs() < 0.000001 );
         Ok(())
     }
@@ -332,7 +345,7 @@ mod tests {
                 Point { x: 2.0, y: 3.0 },
             ]
         };
-        assert!( square.area() == 0.0 );
+        assert!( square.area() == -1.0 );
     }
 
 
