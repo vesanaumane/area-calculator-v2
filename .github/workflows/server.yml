@@ -1,5 +1,7 @@
 name: Server
 
+run-name: "Build and test the server component for commmit: ${{ github.event.head_commit.message }}" 
+
 on:
   push:
     branches: [ "main" ]
