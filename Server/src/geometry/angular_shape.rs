@@ -112,12 +112,12 @@ impl AngularShape {
 impl AreaCalculatable for AngularShape {
 
     // https://www.mathsisfun.com/geometry/area-irregular-polygons.html
-    // Returns the area of the shape, or zero if the shape is not valid.
+    // Returns the area of the shape, or -1 if the shape is not valid.
     fn area(&self) -> f64 {
         
-        // Check if the shape is valid. Return zero if the shape is not valid.
+        // Check if the shape is valid. Return -1 if the shape is not valid.
         if !self.is_valid().unwrap() {
-            return 0.0;
+            return -1.0;
         }
 
         // Calcluate areas of between the lines and the x-axis
