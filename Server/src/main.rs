@@ -64,6 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// Setup logging with tracing library.
 fn setup_tracing() {
 
     // Log file access.
