@@ -2,8 +2,9 @@ mod geometry;
 mod webserver;
 
 use webserver::{http_method::HttpMethod, http_status::HttpStatus, response::Response, webserver::WebServer};
+use crate::webserver::routehandler::RouteHandler;
 
-use tracing::{info};
+use tracing::{info, error};
 use tracing_subscriber::{
     prelude::*,
     fmt,
@@ -17,6 +18,7 @@ use std::fs;
 
 
 
+/// The main function initializes the web server, sets up routes, and starts the server.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Setup logging.
@@ -25,45 +27,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Start the webserver on localhost 8080.
     let mut server = WebServer::new("localhost", "8080");
 
-    // Add a route to the server.
-    server.add_route( 
-        webserver::routehandler::RouteHandler::new(
-        HttpMethod::GET,
-        "/",
-        Arc::new(|_path| {
+    // Add all routes to the server.
+    for route in define_routes() {
 
-            //return Response::new( HttpStatus::Ok, String::new() );
+        // Add the route to the server.
+        // Log route info before moving it.
+        let method = route.method.clone();
+        let path = route.path.clone();
+        let added = server.add_route(route);
+        if !added  {
+            error!( "Failed to add route: {} {}", method, path);
+            std::process::exit(1);
+        } else {
+            info!("Added route: {} {}", method, path);
+        }
+    }
 
-            // Return the index.html file.
-            
-            let response_body = fs::read_to_string("src/webserver/index.html").unwrap();
-            let length = response_body.len();
-            let header_content_length = format!( "Content-Length: {length}");
-
-            /* let response = format!(
-                "{response_status}\r\n{content_length}\r\n\r\n{response_body}"
-            ); */
-            let response: Response = Response::new(
-                HttpStatus::Ok,
-                response_body,
-                vec![
-                    ("Content-Type".to_string(), "text/html; charset=utf-8".to_string()),
-                    ("Content-Length".to_string(), length.to_string()),
-                ]
-            );
-            info!("Response: {}", response);
-            
-            return response;
-        })
-    ));
-
+    // Start the server.
     server.start();
 
+    // Wait for the user to press Enter to stop the server.
     println!("Press Enter to exit...");
     let _ = std::io::stdout().flush();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
 
+    // Stop the server.
+    info!("Stopping server...");
     server.stop();
     info!("Server stopped.");
 
@@ -99,4 +89,39 @@ fn setup_tracing() {
     
     // Apply the subscriber.
     tracing::subscriber::set_global_default(subcriber).unwrap();
+}
+
+/// Function to define all routes this web server will handle.
+/// # Returns
+/// A list of routes.
+fn define_routes() -> Vec<RouteHandler> {
+
+    // Create a vector to hold the routes.
+    let mut routes = Vec::new();
+
+    // Add the root route that serves the index.html file.
+    routes.push(webserver::routehandler::RouteHandler::new(
+        HttpMethod::GET,
+        "/",
+        Arc::new(|_path| {
+
+            // Return the index.html file.
+            let response_body = fs::read_to_string("src/webserver/index.html").unwrap();
+            let length = response_body.len();
+            let response: Response = Response::new(
+                HttpStatus::Ok,
+                response_body,
+                vec![
+                    ("Content-Type".to_string(), "text/html; charset=utf-8".to_string()),
+                    ("Content-Length".to_string(), length.to_string()),
+                ]
+            );
+            info!("Response: {}", response);
+            
+            return response;
+        })
+    ) );
+
+    // Return the routes.
+    routes
 }
