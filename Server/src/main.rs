@@ -26,7 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut server = WebServer::new("localhost", "8080");
 
     // Add a route to the server.
-    server.add_route( webserver::routehandler::RouteHandler::new(
+    server.add_route( 
+        webserver::routehandler::RouteHandler::new(
         HttpMethod::GET,
         "/",
         Arc::new(|_path| {
@@ -34,17 +35,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             //return Response::new( HttpStatus::Ok, String::new() );
 
             // Return the index.html file.
-            let response_status = "HTTP/1.1 200 OK";
-            let response_body = fs::read_to_string("src/webserver/index.html").unwrap(); // todo: error handling
+            
+            let response_body = fs::read_to_string("src/webserver/index.html").unwrap();
             let length = response_body.len();
-            let content_length = format!( "Content-Length: {length}");
+            let header_content_length = format!( "Content-Length: {length}");
 
             /* let response = format!(
                 "{response_status}\r\n{content_length}\r\n\r\n{response_body}"
             ); */
             let response: Response = Response::new(
                 HttpStatus::Ok,
-                response_body
+                response_body,
+                vec![
+                    ("Content-Type".to_string(), "text/html; charset=utf-8".to_string()),
+                    ("Content-Length".to_string(), length.to_string()),
+                ]
             );
             info!("Response: {}", response);
             

@@ -88,6 +88,8 @@ impl WebServer {
             for stream in listener.incoming() {
                 if should_stop.load(Ordering::Relaxed) {
                     info!("Server should stop!");
+                    // Sleep for debugging purposes.
+                    std::thread::sleep(std::time::Duration::from_secs(1));
                     break;
                 }
 
@@ -130,17 +132,24 @@ impl WebServer {
         // Stop request handler loop the next time there is a request.
         self.should_stop.store(true, Ordering::Relaxed);
 
-        // Call the listener to unblock it.
+        // Call the listner to unblock it.
         let _ = TcpStream::connect( self.local_addr.unwrap() );
 
         // Wait for the listener to finish.
-        //self.listener_handle.unwrap().join().unwrap();
+        if let Some(handle) = self.listener_handle.take() {
+            let _ = handle.join();
+        }
+
         self.is_running = false;
     }
 
 
 }
 
+// Handle an incoming connection.
+// This function reads the request from the stream, parses it, finds the appropriate route handler,
+// and sends the response back to the client.
+// This function is called in a separate thread for each incoming connection.
 fn handle_connection(
     mut stream: std::net::TcpStream,
     routes: &Vec<RouteHandler>,
@@ -168,7 +177,29 @@ fn handle_connection(
         let response: Response;
         if route_handler.is_none() {
             info!("No route handler found for request '{} {}'", request.method.to_string(), request.path);
-            response = Response::new( HttpStatus::NotFound, String::new() );
+            response = Response::new(
+            HttpStatus::NotFound,
+            r#"<!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>404 Not Found</title>
+                        <style>
+                            body { font-family: sans-serif; background: #f8f8f8; color: #333; text-align: center; margin-top: 10%; }
+                            h1 { font-size: 3em; margin-bottom: 0.2em; }
+                            p { font-size: 1.2em; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>404 Not Found</h1>
+                        <p>The page you requested could not be found.</p>
+                    </body>
+                    </html>
+                    "#.to_string(),
+            vec![("Content-Type".to_string(), "text/html; charset=utf-8".to_string())]
+            );
+            info!("Response: {}", response.to_string());
+            debug!("No route handler found for request '{} {}'", request.method.to_string(), request.path);
         }
         else {
 
@@ -180,13 +211,52 @@ fn handle_connection(
                 request.method.to_string(), 
                 request.path);
             
-            // Call the route handler. TODO: Send 500 if the handler panics.
-            response = (handler.handler)( request );
+            // Call the route handler.
+            // We need to clone the handler because it is an Arc, and we need to move it into the closure 
+            // to avoid borrowing issues.
+            let handler_arc = handler.handler.clone();
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe( move || {
+                (handler_arc)(request)
+            }));
+            response = match result {
+                Ok(resp) => resp,
+                Err(panic_info) => {
+                    // Try to extract the panic message
+                    if let Some(s) = panic_info.downcast_ref::<&str>() {
+                        debug!("Handler panicked: {}", s);
+                    } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                        debug!("Handler panicked: {}", s);
+                    } else {
+                        debug!("Handler panicked with unknown cause.");
+                    } 
+                
+                    // Return a 500 Internal Server Error response.
+                    Response::new(
+                    HttpStatus::InternalServerError,
+                    r#"<!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>500 Internal Server Error</title>
+                            <style>
+                                body { font-family: sans-serif; background: #f8f8f8; color: #333; text-align: center; margin-top: 10%; }
+                                h1 { font-size: 3em; margin-bottom: 0.2em; }
+                                p { font-size: 1.2em; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>500 Internal Server Error</h1>
+                            <p>The server encountered an unexpected condition.</p>
+                        </body>
+                        </html>
+                        "#.to_string(),
+                    vec![("Content-Type".to_string(), "text/html; charset=utf-8".to_string())]
+                ) },
+            };
             info!("Response from handler: {}", response.to_string());
         }
         
         // Write the response to the stream.
-        info!("Response: {response}");
         stream.write_all(response.to_string().as_bytes()).unwrap(); // todo: error handling
 
     }

@@ -9,9 +9,12 @@ pub struct Response {
 }
 
 impl Response {
-    pub fn new( status: HttpStatus, body: String) -> Response {
+    pub fn new( 
+        status: HttpStatus, 
+        body: String, 
+        headers: Vec<(String, String)>) -> Response {
         Response {
-            headers: vec![("Content-Type".to_string(), "text/html".to_string())],
+            headers,
             status,
             body
         }
