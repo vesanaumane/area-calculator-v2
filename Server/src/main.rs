@@ -1,9 +1,7 @@
 mod geometry;
+mod webserver;
 
-use crate::geometry::line::Line;
-use crate::geometry::point::Point;
-use crate::geometry::angular_shape::AngularShape;
-use crate::geometry::traits::AreaCalculatable;
+use webserver::{http_method::HttpMethod, http_status::HttpStatus, response::Response, webserver::WebServer};
 
 use tracing::{info};
 use tracing_subscriber::{
@@ -13,52 +11,55 @@ use tracing_subscriber::{
     Registry, 
     filter
 };
+use std::sync::Arc;
+use std::io::Write;
+use std::fs;
+
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Setup logging.
     setup_tracing();
-    info!("Server started.");
 
-    let line1: Line = Line {
-        start: Point { x: 1.0, y: 1.0 },
-        end: Point { x: 5.0, y: 1.0 },
-    };
+    // Start the webserver on localhost 8080.
+    let mut server = WebServer::new("localhost", "8080");
 
-    let line2: Line = Line {
-        start: Point { x: 1.0, y: 1.2 },
-        end: Point { x: 5.0, y: 5.0 },
-    };
+    // Add a route to the server.
+    server.add_route( webserver::routehandler::RouteHandler::new(
+        HttpMethod::GET,
+        "/",
+        Arc::new(|_path| {
 
-    info!("The length of the line1 is: {}", line1.length() );
-    info!("The length of the line2 is: {}", line2.length() );
+            //return Response::new( HttpStatus::Ok, String::new() );
 
-    if line1.intersects( &line2 ) {
-        info!("The lines intersect.");
-    } else {
-        info!("The lines do not intersect.");
-    }
+            // Return the index.html file.
+            let response_status = "HTTP/1.1 200 OK";
+            let response_body = fs::read_to_string("src/webserver/index.html").unwrap(); // todo: error handling
+            let length = response_body.len();
+            let content_length = format!( "Content-Length: {length}");
 
-    // Create a square. The first point is also the last point.
-    let square: AngularShape = AngularShape {
-        corners: vec![
-            Point { x: 0.0, y: 0.0 },
-            Point { x: 0.0, y: 2.0 },
-            Point { x: 2.0, y: 2.0 }
-        ]
-    };
+            /* let response = format!(
+                "{response_status}\r\n{content_length}\r\n\r\n{response_body}"
+            ); */
+            let response: Response = Response::new(
+                HttpStatus::Ok,
+                response_body
+            );
+            info!("Response: {}", response);
+            
+            return response;
+        })
+    ));
 
-    // Check if the square is valid.
-    if square.is_valid()? {
-        info!("The square is valid.");
-    } else {
-        info!("The square is not valid.");
-    }
+    server.start();
 
-    // Calculate the area of the square.
-    info!("The area of the square is: {}", square.area() );
+    println!("Press Enter to exit...");
+    let _ = std::io::stdout().flush();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
 
+    server.stop();
     info!("Server stopped.");
 
     Ok(())
